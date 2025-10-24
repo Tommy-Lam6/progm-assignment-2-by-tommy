@@ -1,62 +1,87 @@
-[
-  {
-    "success": true,
-    "data": {
-      "date": "2024年3月21日",
-      "location": "開心小館",
-      "subTotal": 237,
-      "tip": 23.7,
-      "totalAmount": 260.7,
-      "items": [
-        {
-          "name": "Alice",
-          "amount": 88.3
-        },
-        {
-          "name": "Bob",
-          "amount": 86.2
-        },
-        {
-          "name": "Charlie",
-          "amount": 86.2
-        }
-      ]
-    }
+{
+  "summary": {
+    "totalFiles": 3,
+    "successfulFiles": 3,
+    "failedFiles": 0,
+    "totalAmount": 553.7,
+    "totalTip": 56.7,
+    "uniqueLocations": 3,
+    "uniquePersons": 3,
+    "processedAt": "2025-10-24T02:14:33.572Z",
+    "processingTimeMs": 10
   },
-  {
-    "success": true,
-    "data": {
-      "date": "2024年3月22日",
-      "location": "美味餐廳",
-      "subTotal": 120,
-      "tip": 12,
-      "totalAmount": 132,
-      "items": [
-        {
-          "name": "Charlie",
-          "amount": 132
-        }
-      ]
+  "results": [
+    {
+      "success": true,
+      "data": {
+        "date": "2024年3月21日",
+        "location": "開心小館",
+        "subTotal": 237,
+        "tip": 23.7,
+        "totalAmount": 260.7,
+        "items": [
+          {
+            "name": "Alice",
+            "amount": 88.3
+          },
+          {
+            "name": "Bob",
+            "amount": 86.2
+          },
+          {
+            "name": "Charlie",
+            "amount": 86.2
+          }
+        ]
+      },
+      "metadata": {
+        "filename": "bill-1.json",
+        "processedAt": "2025-10-24T02:14:33.565Z"
+      }
+    },
+    {
+      "success": true,
+      "data": {
+        "date": "2024年3月22日",
+        "location": "美味餐廳",
+        "subTotal": 120,
+        "tip": 12,
+        "totalAmount": 132,
+        "items": [
+          {
+            "name": "Charlie",
+            "amount": 132
+          }
+        ]
+      },
+      "metadata": {
+        "filename": "bill-2.json",
+        "processedAt": "2025-10-24T02:14:33.568Z"
+      }
+    },
+    {
+      "success": true,
+      "data": {
+        "date": "2024年3月23日",
+        "location": "咖啡廳",
+        "subTotal": 140,
+        "tip": 21,
+        "totalAmount": 161,
+        "items": [
+          {
+            "name": "Alice",
+            "amount": 86.2
+          },
+          {
+            "name": "Bob",
+            "amount": 74.8
+          }
+        ]
+      },
+      "metadata": {
+        "filename": "bill-3.json",
+        "processedAt": "2025-10-24T02:14:33.571Z"
+      }
     }
-  },
-  {
-    "success": true,
-    "data": {
-      "date": "2024年3月23日",
-      "location": "咖啡廳",
-      "subTotal": 140,
-      "tip": 21,
-      "totalAmount": 161,
-      "items": [
-        {
-          "name": "Alice",
-          "amount": 86.2
-        },
-        {
-          "name": "Bob",
-          "amount": 74.8
-        }
-      ]
-    }
-  }
-]
+  ]
+}

@@ -84,9 +84,18 @@ export async function main(args: string[]): Promise<void> {
       );
     }
 
+    // 顯示開始信息
+    console.log("\n🚀 聚餐分帳處理器 v2.0");
+    console.log("═".repeat(50));
+
     if (inputStat.isDirectory()) {
       // 批次處理
-      console.log(`開始批次處理目錄: ${parsedArgs.input}`);
+      console.log(`📂 模式: 批次處理`);
+      console.log(`📁 輸入目錄: ${parsedArgs.input}`);
+      console.log(`📁 輸出目錄: ${parsedArgs.output}`);
+      console.log(`📄 輸出格式: ${parsedArgs.format}`);
+      console.log("═".repeat(50));
+
       await processBatch(
         parsedArgs.input,
         parsedArgs.output,
@@ -94,7 +103,11 @@ export async function main(args: string[]): Promise<void> {
       );
     } else if (inputStat.isFile()) {
       // 單一檔案處理
-      console.log(`處理檔案: ${parsedArgs.input} -> ${parsedArgs.output}`);
+      console.log(`📄 模式: 單一檔案處理`);
+      console.log(`📖 輸入檔案: ${parsedArgs.input}`);
+      console.log(`💾 輸出檔案: ${parsedArgs.output}`);
+      console.log(`📄 輸出格式: ${parsedArgs.format}`);
+      console.log("═".repeat(50));
 
       // 檢查是否為測試環境（測試時不包裝輸出）
       const isTestMode =
@@ -108,11 +121,14 @@ export async function main(args: string[]): Promise<void> {
         parsedArgs.format,
         !isTestMode
       );
-
-      console.log(`處理完成: ${parsedArgs.output}`);
     } else {
       throw new Error(`輸入路徑既非檔案也非目錄: ${parsedArgs.input}`);
     }
+
+    // 顯示完成信息
+    console.log("═".repeat(50));
+    console.log("✅ 所有處理已成功完成！");
+    console.log("═".repeat(50));
   } catch (error) {
     if (error instanceof Error) {
       console.error(`❌ 錯誤: ${error.message}`);
@@ -215,14 +231,55 @@ async function processFile(
   format: string = "json",
   wrapOutput: boolean = true
 ): Promise<void> {
-  // 讀取輸入檔案
-  const inputData = await readJSONFile(inputPath);
+  const startTime = Date.now();
 
-  // 呼叫 core 函數處理數據
-  const result = splitBill(inputData);
+  try {
+    console.log(`📖 讀取檔案: ${inputPath}`);
 
-  // 寫入輸出檔案
-  await writeFile(outputPath, result, format, wrapOutput);
+    // 讀取輸入檔案
+    const inputData = await readJSONFile(inputPath);
+
+    console.log(`🧮 處理帳單資料...`);
+    console.log(`   📅 日期: ${inputData.date}`);
+    console.log(`   🏪 地點: ${inputData.location}`);
+    console.log(`   💰 項目數量: ${inputData.items.length}`);
+    console.log(`   🎁 小費比例: ${inputData.tipPercentage}%`);
+
+    // 呼叫 core 函數處理數據
+    const result = splitBill(inputData);
+
+    console.log(`💾 寫入結果到: ${outputPath} (格式: ${format})`);
+
+    // 寫入輸出檔案
+    await writeFile(outputPath, result, format, wrapOutput);
+
+    // 顯示處理結果摘要
+    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+    console.log("\n✨ 處理完成！");
+    console.log("─".repeat(40));
+    console.log(`📊 結果摘要:`);
+    console.log(`   📅 日期: ${result.date}`);
+    console.log(`   🏪 地點: ${result.location}`);
+    console.log(`   💰 小計: $${result.subTotal}`);
+    console.log(`   🎁 小費: $${result.tip}`);
+    console.log(`   💸 總計: $${result.totalAmount}`);
+    console.log(`   👥 分帳人數: ${result.items.length}`);
+
+    if (result.items.length > 0) {
+      console.log(`   💳 分帳明細:`);
+      result.items.forEach((item) => {
+        console.log(`      ${item.name}: $${item.amount}`);
+      });
+    }
+
+    console.log(`   ⏱️  處理時間: ${processingTime}s`);
+    console.log("─".repeat(40));
+  } catch (error) {
+    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.error(`❌ 處理失敗 (${processingTime}s):`, error);
+    throw error;
+  }
 }
 
 /**
@@ -233,55 +290,158 @@ async function processBatch(
   outputDir: string,
   format: string = "json"
 ): Promise<void> {
-  // 確保輸出目錄存在
-  await fsPromises.mkdir(outputDir, { recursive: true });
+  const startTime = Date.now();
 
-  // 讀取輸入目錄中的所有檔案
-  const files = await fsPromises.readdir(inputDir);
+  try {
+    // 確保輸出目錄存在
+    await fsPromises.mkdir(outputDir, { recursive: true });
 
-  // 篩選出 JSON 檔案
-  const jsonFiles = files.filter((file) => file.endsWith(".json"));
+    // 讀取輸入目錄中的所有檔案
+    const files = await fsPromises.readdir(inputDir);
 
-  // 收集所有處理結果
-  const results = [];
+    // 篩選出 JSON 檔案
+    const jsonFiles = files.filter((file) => file.endsWith(".json"));
+    const totalFiles = jsonFiles.length;
 
-  // 處理每個 JSON 檔案
-  for (const file of jsonFiles) {
-    const inputPath = path.join(inputDir, file);
-
-    try {
-      const inputData = await readJSONFile(inputPath);
-      const result = splitBill(inputData);
-
-      // 包裝成 success/data 格式
-      results.push({
-        success: true,
-        data: result,
-      });
-
-      console.log(`Processed: ${file}`);
-    } catch (error) {
-      console.error(`Error processing ${file}:`, error);
-      // 添加錯誤結果
-      results.push({
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        file: file,
-      });
+    if (totalFiles === 0) {
+      console.log(`⚠️  在目錄 ${inputDir} 中沒有找到 JSON 檔案`);
+      return;
     }
+
+    console.log(`📁 找到 ${totalFiles} 個 JSON 檔案，開始批次處理...`);
+
+    // 收集所有處理結果和統計信息
+    const results = [];
+    const stats = {
+      total: totalFiles,
+      successful: 0,
+      failed: 0,
+      totalAmount: 0,
+      totalTip: 0,
+      locations: new Set<string>(),
+      persons: new Set<string>(),
+    };
+
+    // 處理每個 JSON 檔案
+    for (let i = 0; i < jsonFiles.length; i++) {
+      const file = jsonFiles[i];
+      const inputPath = path.join(inputDir, file);
+      const progress = `(${i + 1}/${totalFiles})`;
+
+      try {
+        console.log(`🔄 ${progress} 處理中: ${file}`);
+
+        const inputData = await readJSONFile(inputPath);
+        const result = splitBill(inputData);
+
+        // 收集統計信息
+        stats.successful++;
+        stats.totalAmount += result.totalAmount;
+        stats.totalTip += result.tip;
+        stats.locations.add(result.location);
+        result.items.forEach((item) => stats.persons.add(item.name));
+
+        // 包裝成 success/data 格式
+        results.push({
+          success: true,
+          data: result,
+          metadata: {
+            filename: file,
+            processedAt: new Date().toISOString(),
+          },
+        });
+
+        console.log(
+          `✅ ${progress} 完成: ${file} (總額: $${result.totalAmount})`
+        );
+      } catch (error) {
+        stats.failed++;
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+
+        console.error(`❌ ${progress} 失敗: ${file} - ${errorMessage}`);
+
+        // 添加錯誤結果
+        results.push({
+          success: false,
+          error: errorMessage,
+          file: file,
+          processedAt: new Date().toISOString(),
+        });
+      }
+
+      // 顯示進度條
+      const progressPercent = Math.round(((i + 1) / totalFiles) * 100);
+      const progressBar =
+        "█".repeat(Math.floor(progressPercent / 5)) +
+        "░".repeat(20 - Math.floor(progressPercent / 5));
+      const timeElapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+      process.stdout.write(
+        `\r📊 進度: [${progressBar}] ${progressPercent}% (${timeElapsed}s)`
+      );
+    }
+
+    console.log("\n"); // 換行
+
+    // 顯示處理統計
+    console.log("📈 批次處理統計:");
+    console.log(`   ✅ 成功: ${stats.successful} 檔案`);
+    if (stats.failed > 0) {
+      console.log(`   ❌ 失敗: ${stats.failed} 檔案`);
+    }
+    console.log(`   💰 總金額: $${Math.round(stats.totalAmount * 100) / 100}`);
+    console.log(`   🎯 總小費: $${Math.round(stats.totalTip * 100) / 100}`);
+    console.log(`   🏪 地點數: ${stats.locations.size}`);
+    console.log(`   👥 參與人數: ${stats.persons.size}`);
+
+    // 寫入批次處理結果到單一檔案
+    const batchResult = {
+      summary: {
+        totalFiles: stats.total,
+        successfulFiles: stats.successful,
+        failedFiles: stats.failed,
+        totalAmount: Math.round(stats.totalAmount * 100) / 100,
+        totalTip: Math.round(stats.totalTip * 100) / 100,
+        uniqueLocations: stats.locations.size,
+        uniquePersons: stats.persons.size,
+        processedAt: new Date().toISOString(),
+        processingTimeMs: Date.now() - startTime,
+      },
+      results: results,
+    };
+
+    const outputPath = path.join(outputDir, "batch-result.json");
+    await fsPromises.writeFile(
+      outputPath,
+      JSON.stringify(batchResult, null, 2),
+      "utf-8"
+    );
+
+    // 顯示最終統計
+    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+    console.log("\n🎉 批次處理完成！");
+    console.log("═".repeat(50));
+    console.log(`📊 處理統計:`);
+    console.log(`   總檔案數: ${stats.total}`);
+    console.log(`   ✅ 成功: ${stats.successful}`);
+    console.log(`   ❌ 失敗: ${stats.failed}`);
+    console.log(`   💰 總金額: $${batchResult.summary.totalAmount}`);
+    console.log(`   🎁 總小費: $${batchResult.summary.totalTip}`);
+    console.log(`   🏪 餐廳數量: ${stats.locations.size}`);
+    console.log(`   👥 參與人數: ${stats.persons.size}`);
+    console.log(`   ⏱️  處理時間: ${processingTime}s`);
+    console.log(`   📁 結果保存至: ${outputPath}`);
+    console.log("═".repeat(50));
+
+    if (stats.failed > 0) {
+      console.log(`⚠️  注意: ${stats.failed} 個檔案處理失敗，請檢查錯誤訊息`);
+    }
+  } catch (error) {
+    const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+    console.error(`❌ 批次處理失敗 (${processingTime}s):`, error);
+    throw error;
   }
-
-  // 寫入批次處理結果到單一檔案
-  const outputPath = path.join(outputDir, "batch-result.json");
-  await fsPromises.writeFile(
-    outputPath,
-    JSON.stringify(results, null, 2),
-    "utf-8"
-  );
-
-  console.log(
-    `Batch processing completed. Processed ${jsonFiles.length} files. Results saved to batch-result.json`
-  );
 }
 
 /**
