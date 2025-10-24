@@ -1,0 +1,12 @@
+{
+  "date": "2024-03-21",
+  "location": "測試餐廳",
+  "tipPercentage": 10,
+  "items": [
+    {
+      "name": "測試項目"
+      "price": 100,
+      "isShared": true
+    }
+  ]
+}
