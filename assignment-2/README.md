@@ -1,6 +1,6 @@
 # Assignment 2 - 聚餐分帳擴展與檔案處理
 
-學生名稱：
+學生名稱：Lam Sau Chuen(Tommy)
 
 ## 使用說明
 
@@ -20,13 +20,13 @@ npm test
 
 ```bash
 # 基本用法 - 處理單一帳單
-npx ts-node src/processor.ts --input=sample-data/single-bill.json --output=result.json
+npx ts-node src/cli.ts --input=sample-data/single-bill.json --output=result.json
 
 # 指定輸出格式為文字
-npx ts-node src/processor.ts --input=sample-data/single-bill.json --output=result.txt --format=text
+npx ts-node src/cli.ts --input=sample-data/single-bill.json --output=result.txt --format=text
 
 # 批次處理（加分項目）- 處理目錄中的所有檔案
-npx ts-node src/processor.ts --input=sample-data/input-dir/ --output=sample-data/output-dir/ --format=json
+npx ts-node src/cli.ts --input=sample-data/input-dir/ --output=sample-data/output-dir/ --format=json
 ```
 
 ## 檔案結構
