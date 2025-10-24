@@ -7,8 +7,8 @@
     "totalTip": 56.7,
     "uniqueLocations": 3,
     "uniquePersons": 3,
-    "processedAt": "2025-10-24T02:41:37.485Z",
-    "processingTimeMs": 13
+    "processedAt": "2025-10-24T02:56:53.267Z",
+    "processingTimeMs": 16
   },
   "results": [
     {
@@ -36,7 +36,7 @@
       },
       "metadata": {
         "filename": "bill-1.json",
-        "processedAt": "2025-10-24T02:41:37.477Z"
+        "processedAt": "2025-10-24T02:56:53.258Z"
       }
     },
     {
@@ -56,7 +56,7 @@
       },
       "metadata": {
         "filename": "bill-2.json",
-        "processedAt": "2025-10-24T02:41:37.481Z"
+        "processedAt": "2025-10-24T02:56:53.261Z"
       }
     },
     {
@@ -80,7 +80,7 @@
       },
       "metadata": {
         "filename": "bill-3.json",
-        "processedAt": "2025-10-24T02:41:37.483Z"
+        "processedAt": "2025-10-24T02:56:53.264Z"
       }
     }
   ]
