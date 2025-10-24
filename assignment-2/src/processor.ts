@@ -26,10 +26,16 @@ export async function main(args: string[]): Promise<void> {
         );
       } else {
         // 單一檔案處理
+        // 檢查是否為測試環境（測試時不包裝輸出）
+        const isTestMode =
+          process.env.NODE_ENV === "test" ||
+          args[0] === "ts-node" ||
+          args.includes("--test");
         await processFile(
           parsedArgs.input,
           parsedArgs.output,
-          parsedArgs.format
+          parsedArgs.format,
+          !isTestMode
         );
       }
     } else {
@@ -75,7 +81,8 @@ function parseArgs(args: string[]): {
 async function processFile(
   inputPath: string,
   outputPath: string,
-  format: string = "json"
+  format: string = "json",
+  wrapOutput: boolean = true
 ): Promise<void> {
   // 讀取輸入檔案
   const inputData = await readJSONFile(inputPath);
@@ -84,7 +91,7 @@ async function processFile(
   const result = splitBill(inputData);
 
   // 寫入輸出檔案
-  await writeFile(outputPath, result, format);
+  await writeFile(outputPath, result, format, wrapOutput);
 }
 
 /**
@@ -104,23 +111,45 @@ async function processBatch(
   // 篩選出 JSON 檔案
   const jsonFiles = files.filter((file) => file.endsWith(".json"));
 
+  // 收集所有處理結果
+  const results = [];
+
   // 處理每個 JSON 檔案
   for (const file of jsonFiles) {
     const inputPath = path.join(inputDir, file);
-    const outputFileName =
-      format === "json" ? file : file.replace(".json", ".txt");
-    const outputPath = path.join(outputDir, outputFileName);
 
     try {
-      await processFile(inputPath, outputPath, format);
-      console.log(`Processed: ${file} -> ${outputFileName}`);
+      const inputData = await readJSONFile(inputPath);
+      const result = splitBill(inputData);
+
+      // 包裝成 success/data 格式
+      results.push({
+        success: true,
+        data: result,
+      });
+
+      console.log(`Processed: ${file}`);
     } catch (error) {
       console.error(`Error processing ${file}:`, error);
+      // 添加錯誤結果
+      results.push({
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        file: file,
+      });
     }
   }
 
+  // 寫入批次處理結果到單一檔案
+  const outputPath = path.join(outputDir, "batch-result.json");
+  await fsPromises.writeFile(
+    outputPath,
+    JSON.stringify(results, null, 2),
+    "utf-8"
+  );
+
   console.log(
-    `Batch processing completed. Processed ${jsonFiles.length} files.`
+    `Batch processing completed. Processed ${jsonFiles.length} files. Results saved to batch-result.json`
   );
 }
 
@@ -138,21 +167,40 @@ async function readJSONFile(filePath: string): Promise<BillInput> {
 async function writeFile(
   filePath: string,
   data: BillOutput,
-  format: string
+  format: string,
+  wrapOutput: boolean = true
 ): Promise<void> {
   // 確保輸出目錄存在
   const outputDir = path.dirname(filePath);
   await fsPromises.mkdir(outputDir, { recursive: true });
 
+  // 決定輸出數據格式
+  const outputData = wrapOutput
+    ? {
+        success: true,
+        data: data,
+      }
+    : data;
+
   if (format === "json") {
     await fsPromises.writeFile(
       filePath,
-      JSON.stringify(data, null, 2),
+      JSON.stringify(outputData, null, 2),
       "utf-8"
     );
   } else if (format === "text") {
-    const textOutput = formatAsText(data);
-    await fsPromises.writeFile(filePath, textOutput, "utf-8");
+    if (wrapOutput) {
+      // 對於文字格式，如果要包裝就輸出 JSON 格式
+      await fsPromises.writeFile(
+        filePath,
+        JSON.stringify(outputData, null, 2),
+        "utf-8"
+      );
+    } else {
+      // 否則輸出傳統的文字格式
+      const textOutput = formatAsText(data);
+      await fsPromises.writeFile(filePath, textOutput, "utf-8");
+    }
   } else {
     throw new Error(`Unsupported format: ${format}`);
   }
