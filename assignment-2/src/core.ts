@@ -4,6 +4,7 @@ export type BillInput = {
   location: string;
   tipPercentage: number;
   items: BillItem[];
+  persons?: string[]; // 可選字段，用於指定參與分帳的人員
 };
 
 type BillItem = SharedBillItem | PersonalBillItem;
@@ -44,7 +45,7 @@ export function splitBill(input: BillInput): BillOutput {
   let subTotal = calculateSubTotal(input.items);
   let tip = calculateTip(subTotal, input.tipPercentage);
   let totalAmount = subTotal + tip;
-  let items = calculateItems(input.items, input.tipPercentage);
+  let items = calculateItems(input.items, input.tipPercentage, input.persons);
   adjustAmount(totalAmount, items);
   return {
     date,
@@ -89,17 +90,18 @@ function scanPersons(items: BillItem[]): string[] {
 
 function calculateItems(
   items: BillItem[],
-  tipPercentage: number
+  tipPercentage: number,
+  persons?: string[]
 ): PersonItem[] {
-  let names = scanPersons(items);
-  let persons = names.length;
+  let names = persons && persons.length > 0 ? persons : scanPersons(items);
+  let personsCount = names.length;
   return names.map((name) => ({
     name,
     amount: calculatePersonAmount({
       items,
       tipPercentage,
       name,
-      persons,
+      persons: personsCount,
     }),
   }));
 }
