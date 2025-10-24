@@ -13,9 +13,25 @@ export async function main(args: string[]): Promise<void> {
   const parsedArgs = parseArgs(args);
 
   try {
-    // 單一檔案處理
     if (parsedArgs.input && parsedArgs.output) {
-      await processFile(parsedArgs.input, parsedArgs.output, parsedArgs.format);
+      // 檢查輸入是檔案還是目錄
+      const inputStat = await fsPromises.stat(parsedArgs.input);
+
+      if (inputStat.isDirectory()) {
+        // 批次處理
+        await processBatch(
+          parsedArgs.input,
+          parsedArgs.output,
+          parsedArgs.format
+        );
+      } else {
+        // 單一檔案處理
+        await processFile(
+          parsedArgs.input,
+          parsedArgs.output,
+          parsedArgs.format
+        );
+      }
     } else {
       throw new Error("Missing required parameters: --input and --output");
     }
@@ -69,6 +85,43 @@ async function processFile(
 
   // 寫入輸出檔案
   await writeFile(outputPath, result, format);
+}
+
+/**
+ * 批次處理目錄中的所有 JSON 檔案
+ */
+async function processBatch(
+  inputDir: string,
+  outputDir: string,
+  format: string = "json"
+): Promise<void> {
+  // 確保輸出目錄存在
+  await fsPromises.mkdir(outputDir, { recursive: true });
+
+  // 讀取輸入目錄中的所有檔案
+  const files = await fsPromises.readdir(inputDir);
+
+  // 篩選出 JSON 檔案
+  const jsonFiles = files.filter((file) => file.endsWith(".json"));
+
+  // 處理每個 JSON 檔案
+  for (const file of jsonFiles) {
+    const inputPath = path.join(inputDir, file);
+    const outputFileName =
+      format === "json" ? file : file.replace(".json", ".txt");
+    const outputPath = path.join(outputDir, outputFileName);
+
+    try {
+      await processFile(inputPath, outputPath, format);
+      console.log(`Processed: ${file} -> ${outputFileName}`);
+    } catch (error) {
+      console.error(`Error processing ${file}:`, error);
+    }
+  }
+
+  console.log(
+    `Batch processing completed. Processed ${jsonFiles.length} files.`
+  );
 }
 
 /**
