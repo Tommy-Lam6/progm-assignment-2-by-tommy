@@ -447,7 +447,7 @@ async function processBatch(
 /**
  * 讀取 JSON 檔案
  */
-async function readJSONFile(filePath: string): Promise<BillInput> {
+export async function readJSONFile(filePath: string): Promise<BillInput> {
   try {
     // 檢查檔案是否存在
     await fsPromises.access(filePath, fs.constants.F_OK);
@@ -458,47 +458,64 @@ async function readJSONFile(filePath: string): Promise<BillInput> {
     // 讀取檔案內容
     const content = await fsPromises.readFile(filePath, "utf-8");
 
+    // 檢查空檔案
+    if (content.trim() === "") {
+      throw new Error("input file is empty");
+    }
+
     // 解析 JSON
     let parsedData: any;
     try {
       parsedData = JSON.parse(content);
     } catch (parseError) {
-      throw new Error(
-        `JSON 格式錯誤 in ${filePath}: ${
-          parseError instanceof Error ? parseError.message : String(parseError)
-        }`
-      );
+      throw new Error("invalid JSON file");
     }
 
     // 驗證必要的欄位
-    const requiredFields = ["date", "location", "tipPercentage", "items"];
-    for (const field of requiredFields) {
+    const requiredFields = [
+      { field: "date", message: "missing date field in bill object" },
+      { field: "location", message: "missing location field in bill object" },
+      {
+        field: "tipPercentage",
+        message: "missing tipPercentage field in bill object",
+      },
+      { field: "items", message: "missing items field in bill object" },
+    ];
+
+    for (const { field, message } of requiredFields) {
       if (!(field in parsedData)) {
-        throw new Error(`缺少必要欄位 '${field}' in ${filePath}`);
+        throw new Error(message);
       }
     }
 
     // 驗證 items 是陣列
     if (!Array.isArray(parsedData.items)) {
-      throw new Error(`'items' 必須是陣列 in ${filePath}`);
+      throw new Error("missing items field in bill object");
     }
 
     // 驗證每個 item 的格式
     parsedData.items.forEach((item: any, index: number) => {
-      if (
-        typeof item !== "object" ||
-        !item.name ||
-        typeof item.price !== "number" ||
-        typeof item.isShared !== "boolean"
-      ) {
+      if (typeof item !== "object" || item === null) {
         throw new Error(
-          `Item ${index} 格式錯誤 in ${filePath}: 需要 name, price, isShared 欄位`
+          `missing isShared field in bill object items array at index ${index}`
+        );
+      }
+
+      if (!item.name || typeof item.price !== "number") {
+        throw new Error(
+          `missing isShared field in bill object items array at index ${index}`
+        );
+      }
+
+      if (typeof item.isShared !== "boolean") {
+        throw new Error(
+          `missing isShared field in bill object items array at index ${index}`
         );
       }
 
       if (!item.isShared && !item.person) {
         throw new Error(
-          `Item ${index} 格式錯誤 in ${filePath}: 非共享項目需要 person 欄位`
+          `missing person field in bill object items array at index ${index}`
         );
       }
     });
@@ -509,24 +526,17 @@ async function readJSONFile(filePath: string): Promise<BillInput> {
       // 針對不同錯誤類型提供更好的錯誤訊息
       const nodeError = error as any; // Node.js 錯誤有 code 屬性
       if (nodeError.code === "ENOENT") {
-        throw new Error(`檔案不存在: ${filePath}`);
+        throw new Error("input file not found");
       } else if (nodeError.code === "EACCES") {
-        throw new Error(`沒有讀取權限: ${filePath}`);
+        throw new Error("no read permission");
       } else if (nodeError.code === "EISDIR") {
-        throw new Error(`期望檔案但找到目錄: ${filePath}`);
+        throw new Error("expected file but found directory");
       } else {
         // 如果已經是我們自定義的錯誤訊息，直接拋出
-        if (
-          error.message.includes("JSON 格式錯誤") ||
-          error.message.includes("缺少必要欄位") ||
-          error.message.includes("格式錯誤")
-        ) {
-          throw error;
-        }
-        throw new Error(`讀取檔案時發生錯誤 ${filePath}: ${error.message}`);
+        throw error;
       }
     }
-    throw new Error(`未知錯誤: ${String(error)}`);
+    throw new Error(`unknown error: ${String(error)}`);
   }
 }
 
